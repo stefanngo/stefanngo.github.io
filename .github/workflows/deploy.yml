@@ -1,0 +1,16 @@
+name: Deploy Simulation
+on:
+  push:
+    branches: [ prod ]
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Simulate Build
+        run: echo "I am building the react project..."
+
+      - name: Simulate Deploy
+        run: echo "If I had a server IP, I would be using SCP to copy files right now!"
