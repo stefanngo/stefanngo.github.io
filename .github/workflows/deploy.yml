@@ -1,16 +1,33 @@
-name: Deploy Simulation
+name: Deploy React App
 on:
   push:
-    branches: [ prod ]
+    branches: [prod] # Be careful: Your default branch might be 'main', not 'prod'!
+
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Code
+      # 1. Check out the code
+      - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Simulate Build
-        run: echo "I am building the react project..."
+      # 2. Set up Node.js (So we can run npm commands)
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: "20"
 
-      - name: Simulate Deploy
-        run: echo "If I had a server IP, I would be using SCP to copy files right now!"
+      # 3. Install dependencies
+      - name: Install Dependencies
+        run: npm ci
+
+      # 4. Build the project
+      # This creates a 'dist' folder with your index.html and js files
+      - name: Build
+        run: npm run build
+
+      # 5. (TEMPORARY) Verify Build
+      # Since you don't have the server yet, let's just list the files
+      # to prove it worked.
+      - name: List Build Files
+        run: ls -R dist/
