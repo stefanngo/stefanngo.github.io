@@ -21,7 +21,7 @@ jobs:
           host: "acompa-conf.org"
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          port: 22
+          port: 2222
           source: "dist/*"
           # CHANGE 2: Point to your SAFE ZONE folder
           target: "/home/acomptec/domains/acompa-conf.org/public_html/ci_test_zone"
