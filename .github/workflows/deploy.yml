@@ -18,7 +18,7 @@ jobs:
       - name: Deploy via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.4
         with:
-          server: "ftp.acompa-conf.org"  # <--- The Magic Bypass!
+          server: ${{ secrets.SERVER_IP }}
           username: ${{ secrets.SERVER_USER }}
           password: ${{ secrets.SERVER_PASSWORD }}
           server-dir: /domains/acompa-conf.org/public_html/ci_test_zone/
