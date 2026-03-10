@@ -1,33 +1,28 @@
-name: Deploy React App
+name: Deploy to Test Zone
 on:
   push:
-    branches: [prod] # Be careful: Your default branch might be 'main', not 'prod'!
+    branches: [test-deploy-setup] # <--- CHANGE 1: Only run on your test branch
 
 jobs:
-  build-and-deploy:
+  deploy:
     runs-on: ubuntu-latest
     steps:
-      # 1. Check out the code
-      - name: Checkout
+      - name: Checkout Code
         uses: actions/checkout@v3
 
-      # 2. Set up Node.js (So we can run npm commands)
-      - name: Setup Node
-        uses: actions/setup-node@v3
+      - name: Install and Build
+        run: |
+          npm install
+          npm run build
+
+      - name: Deploy via SCP
+        uses: appleboy/scp-action@master
         with:
-          node-version: "20"
-
-      # 3. Install dependencies
-      - name: Install Dependencies
-        run: npm ci
-
-      # 4. Build the project
-      # This creates a 'dist' folder with your index.html and js files
-      - name: Build
-        run: npm run build
-
-      # 5. (TEMPORARY) Verify Build
-      # Since you don't have the server yet, let's just list the files
-      # to prove it worked.
-      - name: List Build Files
-        run: ls -R dist/
+          host: "acompa-conf.org"
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 22
+          source: "dist/*"
+          # CHANGE 2: Point to your SAFE ZONE folder
+          target: "/home/acomptec/domains/acompa-conf.org/public_html/ci_test_zone"
+          strip_components: 1
