@@ -20,7 +20,7 @@ jobs:
         with:
           host: "acompa-conf.org"
           username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          password: ${{ secrets.SERVER_PASSWORD }}
           port: 2222
           source: "dist/*"
           # CHANGE 2: Point to your SAFE ZONE folder
