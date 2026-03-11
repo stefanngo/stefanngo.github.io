@@ -1,11 +1,13 @@
-name: Deploy to Test Zone
+name: Deploy React App via API (Test Zone)
+
 on:
   push:
-    branches: [test-deploy-setup] # <--- CHANGE 1: Only run on your test branch
+    branches: [test-with-api] # <--- Listens ONLY to your test branch
 
 jobs:
-  deploy:
-    runs-on: self-hosted
+  build-and-deploy:
+    runs-on: ubuntu-latest # <--- Completely in the cloud!
+
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
@@ -13,19 +15,57 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v3
         with:
-          node-version: '20'
-          
+          node-version: "20"
+
       - name: Install and Build
-        shell: bash
         run: |
           npm install
           npm run build
 
-      - name: Deploy via FTP
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
-        with:
-          server: ${{ secrets.SERVER_IP }}
-          username: ${{ secrets.SERVER_USER }}
-          password: ${{ secrets.SERVER_PASSWORD }}
-          server-dir: /domains/acompa-conf.org/public_html/ci_test_zone/
-          local-dir: ./dist/
+      - name: Package Build for Test Zone
+        # 1. Rename 'dist' to 'ci_test_zone'
+        # 2. Zip the folder itself so it extracts perfectly
+        run: |
+          mv dist ci_test_zone
+          zip -r app.zip ci_test_zone/
+
+      - name: Delete Old Test Folder (Clean Slate)
+        # Deletes the old ci_test_zone to prevent stale files from piling up
+        run: |
+          curl -s -u "${{ secrets.SERVER_USER }}:${{ secrets.DA_LOGIN_KEY }}" \
+               -X POST \
+               -d "action=multiple" \
+               -d "button=delete" \
+               -d "path=/domains/acompa-conf.org/public_html" \
+               -d "select0=ci_test_zone" \
+               "https://melody.maychu.cloud:2222/CMD_API_FILE_MANAGER"
+
+      - name: Upload Zip to Server
+        # Sends the file through the secure HTTPS front door
+        run: |
+          curl -s -u "${{ secrets.SERVER_USER }}:${{ secrets.DA_LOGIN_KEY }}" \
+               -X POST \
+               -F "action=upload" \
+               -F "path=/domains/acompa-conf.org/public_html" \
+               -F "file1=@app.zip" \
+               "https://melody.maychu.cloud:2222/CMD_API_FILE_MANAGER"
+
+      - name: Extract New Test Folder
+        run: |
+          curl -s -u "${{ secrets.SERVER_USER }}:${{ secrets.DA_LOGIN_KEY }}" \
+               -X POST \
+               -d "action=extract" \
+               -d "path=/domains/acompa-conf.org/public_html" \
+               -d "filename=app.zip" \
+               "https://melody.maychu.cloud:2222/CMD_API_FILE_MANAGER"
+
+      - name: Clean up Zip File
+        # Deletes the app.zip file from the server to save storage space
+        run: |
+          curl -s -u "${{ secrets.SERVER_USER }}:${{ secrets.DA_LOGIN_KEY }}" \
+               -X POST \
+               -d "action=multiple" \
+               -d "button=delete" \
+               -d "path=/domains/acompa-conf.org/public_html" \
+               -d "select0=app.zip" \
+               "https://melody.maychu.cloud:2222/CMD_API_FILE_MANAGER"
