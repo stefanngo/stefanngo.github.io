@@ -1,16 +1,15 @@
-name: Deploy React App via API (Test Zone)
+name: Deploy React App via API (Targeted Deletion Test)
 
 on:
   push:
-    branches: [test-with-api] # <--- Listens ONLY to your test branch
+    branches: [ test-with-api ]
 
 jobs:
   build-and-deploy:
-    runs-on: ubuntu-latest # <--- Completely in the cloud!
-
+    runs-on: ubuntu-latest
     env:
-          FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-          
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true 
+
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -18,58 +17,58 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: '20'
 
       - name: Install and Build
         run: |
           npm install
           npm run build
 
-      - name: Package Build for Test Zone
-        # 1. Rename 'dist' to 'ci_test_zone'
-        # 2. Zip the folder itself so it extracts perfectly
+      - name: Package Build for Targeted Test
+        # Zips the contents of the dist folder, just like production
         run: |
-          mv dist ci_test_zone
-          zip -r app.zip ci_test_zone/
+          cd dist
+          zip -r ../app.zip ./*
+          cd ..
 
-      - name: Delete Old Test Folder (Clean Slate)
-        # Deletes the old ci_test_zone to prevent stale files from piling up
+      - name: Delete Old React Assets in Test Zone
+        # Targets ONLY the 'assets' folder INSIDE ci_test_zone
         run: |
           curl -s -u "${{ secrets.SERVER_USER }}:${{ secrets.DA_LOGIN_KEY }}" \
                -X POST \
                -d "action=multiple" \
                -d "button=delete" \
-               -d "path=/domains/acompa-conf.org/public_html" \
-               -d "select0=ci_test_zone" \
+               -d "path=/domains/acompa-conf.org/public_html/ci_test_zone" \
+               -d "select0=assets" \
                "https://melody.maychu.cloud:2222/CMD_API_FILE_MANAGER"
 
-      - name: Upload Zip to Server
-        # Sends the file through the secure HTTPS front door
+      - name: Upload Zip to Test Zone
+        # Uploads specifically to the ci_test_zone folder
         run: |
           curl -s -u "${{ secrets.SERVER_USER }}:${{ secrets.DA_LOGIN_KEY }}" \
                -X POST \
                -F "action=upload" \
-               -F "path=/domains/acompa-conf.org/public_html" \
+               -F "path=/domains/acompa-conf.org/public_html/ci_test_zone" \
                -F "file1=@app.zip" \
                "https://melody.maychu.cloud:2222/CMD_API_FILE_MANAGER"
 
-      - name: Extract New Test Folder
+      - name: Extract New Files in Test Zone
+        # Overwrites index.html and creates the new assets folder
         run: |
           curl -s -u "${{ secrets.SERVER_USER }}:${{ secrets.DA_LOGIN_KEY }}" \
                -X POST \
                -d "action=extract" \
-               -d "path=/domains/acompa-conf.org/public_html" \
+               -d "path=/domains/acompa-conf.org/public_html/ci_test_zone" \
                -d "filename=app.zip" \
                "https://melody.maychu.cloud:2222/CMD_API_FILE_MANAGER"
 
       - name: Clean up Zip File
-        # We add a 5-second pause to let the server finish unzipping!
         run: |
           sleep 5
           curl -s -u "${{ secrets.SERVER_USER }}:${{ secrets.DA_LOGIN_KEY }}" \
                -X POST \
                -d "action=multiple" \
                -d "button=delete" \
-               -d "path=/domains/acompa-conf.org/public_html" \
+               -d "path=/domains/acompa-conf.org/public_html/ci_test_zone" \
                -d "select0=app.zip" \
                "https://melody.maychu.cloud:2222/CMD_API_FILE_MANAGER"
