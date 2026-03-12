@@ -60,8 +60,9 @@ jobs:
                "https://melody.maychu.cloud:2222/CMD_API_FILE_MANAGER"
 
       - name: Clean up Zip File
-        # Deletes the app.zip file from the server to save storage space
+        # We add a 5-second pause to let the server finish unzipping!
         run: |
+          sleep 5
           curl -s -u "${{ secrets.SERVER_USER }}:${{ secrets.DA_LOGIN_KEY }}" \
                -X POST \
                -d "action=multiple" \
